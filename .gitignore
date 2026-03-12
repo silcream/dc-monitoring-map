@@ -1,0 +1,10 @@
+# Screenshots (development artifacts)
+*.png
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+.idea/

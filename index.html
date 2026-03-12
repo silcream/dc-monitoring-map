@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>데이터센터 모니터링 맵</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f1923;
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ── Header ── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2838 100%);
+            border-bottom: 1px solid rgba(0, 200, 255, 0.15);
+            height: 56px;
+            z-index: 1000;
+            position: relative;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #00c8ff, #0080ff);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+
+        .header h1 span {
+            color: #00c8ff;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 13px;
+            color: #8899aa;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #00e676;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ── Map Container ── */
+        #map {
+            width: 100%;
+            height: calc(100vh - 56px);
+        }
+
+        /* ── Sidebar Panel (shows on marker click) ── */
+        .info-panel {
+            position: fixed;
+            top: 56px;
+            right: -420px;
+            width: 400px;
+            height: calc(100vh - 56px);
+            background: linear-gradient(180deg, #0d1b2a 0%, #152238 100%);
+            border-left: 1px solid rgba(0, 200, 255, 0.15);
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .info-panel.open {
+            right: 0;
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(0, 200, 255, 0.08) 0%, rgba(0, 128, 255, 0.04) 100%);
+            border-bottom: 1px solid rgba(0, 200, 255, 0.1);
+            position: relative;
+        }
+
+        .panel-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            color: #8899aa;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .panel-close:hover {
+            background: rgba(255, 80, 80, 0.2);
+            border-color: rgba(255, 80, 80, 0.4);
+            color: #ff5050;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .panel-subtitle {
+            font-size: 12px;
+            color: #6b8299;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .panel-subtitle .loc-icon {
+            color: #00c8ff;
+        }
+
+        /* ── Data Sections ── */
+        .data-section {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #4a6a8a;
+            margin-bottom: 14px;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .data-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: all 0.2s;
+        }
+
+        .data-card:hover {
+            background: rgba(0, 200, 255, 0.04);
+            border-color: rgba(0, 200, 255, 0.15);
+        }
+
+        .data-card.wide {
+            grid-column: 1 / -1;
+        }
+
+        .data-card-label {
+            font-size: 11px;
+            color: #5a7a9a;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .data-card-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .data-card-value .unit {
+            font-size: 13px;
+            font-weight: 400;
+            color: #6b8299;
+            margin-left: 2px;
+        }
+
+        .data-card-value.small {
+            font-size: 16px;
+        }
+
+        .data-card-sub {
+            font-size: 11px;
+            color: #5a7a9a;
+            margin-top: 4px;
+        }
+
+        /* AQI Color Badges */
+        .aqi-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        .aqi-good { background: rgba(0, 230, 118, 0.15); color: #00e676; }
+        .aqi-moderate { background: rgba(255, 214, 0, 0.15); color: #ffd600; }
+        .aqi-unhealthy-sensitive { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+        .aqi-unhealthy { background: rgba(255, 61, 0, 0.15); color: #ff3d00; }
+        .aqi-very-unhealthy { background: rgba(156, 39, 176, 0.15); color: #ab47bc; }
+        .aqi-hazardous { background: rgba(183, 28, 28, 0.15); color: #ef5350; }
+
+        /* ── Loading Skeleton ── */
+        .skeleton {
+            background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+            height: 28px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ── Custom Map Marker ── */
+        .dc-marker {
+            position: relative;
+        }
+
+        .dc-marker-inner {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00c8ff, #0060ff);
+            border-radius: 50%;
+            border: 3px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.6), 0 0 0 4px rgba(0, 200, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+        }
+
+        .dc-marker-inner svg {
+            width: 20px;
+            height: 20px;
+            stroke: #fff;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        .dc-marker-inner:hover {
+            transform: scale(1.15);
+        }
+
+        .dc-marker-inner .marker-emoji {
+            font-size: 20px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+        }
+
+        /* ── Tooltip 다크 테마 ── */
+        .dc-tooltip {
+            background: rgba(13, 27, 42, 0.95) !important;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 200, 255, 0.3) !important;
+            border-radius: 8px !important;
+            color: #e0f0ff !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            padding: 6px 12px !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(0, 200, 255, 0.15) !important;
+            letter-spacing: 0.5px;
+        }
+
+        .dc-tooltip::before {
+            border-top-color: rgba(13, 27, 42, 0.95) !important;
+        }
+
+        .dc-marker-pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 200, 255, 0.2);
+            animation: markerPulse 2s infinite;
+        }
+
+        @keyframes markerPulse {
+            0% { width: 40px; height: 40px; opacity: 1; }
+            100% { width: 80px; height: 80px; opacity: 0; }
+        }
+
+        /* ── Back to overview button ── */
+        .back-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            padding: 10px 24px;
+            background: rgba(13, 27, 42, 0.9);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 200, 255, 0.25);
+            border-radius: 24px;
+            color: #00c8ff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn.visible {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 200, 255, 0.12);
+        }
+
+        /* ── Leaflet overrides ── */
+        .leaflet-container {
+            background: #0a1628;
+        }
+
+        .leaflet-control-zoom a {
+            background: rgba(13, 27, 42, 0.9) !important;
+            color: #00c8ff !important;
+            border: 1px solid rgba(0, 200, 255, 0.2) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: rgba(0, 200, 255, 0.12) !important;
+        }
+
+        .leaflet-control-attribution {
+            background: rgba(13, 27, 42, 0.8) !important;
+            color: #4a6a8a !important;
+            font-size: 10px !important;
+        }
+
+        .leaflet-control-attribution a {
+            color: #5a8abb !important;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .info-panel {
+                width: 100%;
+                right: -100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="header-logo">DC</div>
+            <h1>데이터센터 <span>모니터링</span></h1>
+        </div>
+        <div class="header-right">
+            <span><span class="status-dot"></span>실시간 모니터링</span>
+            <span id="current-time"></span>
+        </div>
+    </header>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Side Info Panel -->
+    <div class="info-panel" id="infoPanel">
+        <div class="panel-header">
+            <button class="panel-close" id="panelClose" title="닫기">&times;</button>
+            <div class="panel-title" id="panelTitle">데이터센터</div>
+            <div class="panel-subtitle">
+                <span class="loc-icon">📍</span>
+                <span id="panelAddress">주소</span>
+            </div>
+        </div>
+
+        <!-- Weather Section -->
+        <div class="data-section">
+            <div class="section-label">🌡 기상 정보</div>
+            <div class="data-grid">
+                <div class="data-card">
+                    <div class="data-card-label">🌡️ 기온</div>
+                    <div class="data-card-value" id="temperature"><div class="skeleton"></div></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">💧 습도</div>
+                    <div class="data-card-value" id="humidity"><div class="skeleton"></div></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">🌬️ 풍속</div>
+                    <div class="data-card-value" id="windspeed"><div class="skeleton"></div></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">🌤️ 날씨</div>
+                    <div class="data-card-value small" id="weatherDesc"><div class="skeleton"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Air Quality Section -->
+        <div class="data-section">
+            <div class="section-label">🏭 대기질 정보</div>
+            <div class="data-grid">
+                <div class="data-card wide">
+                    <div class="data-card-label">통합 대기질 지수 (AQI)</div>
+                    <div class="data-card-value" id="aqiValue"><div class="skeleton"></div></div>
+                    <div id="aqiBadge"></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">PM2.5 미세먼지</div>
+                    <div class="data-card-value" id="pm25"><div class="skeleton"></div></div>
+                    <div class="data-card-sub" id="pm25Status"></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">PM10 초미세먼지</div>
+                    <div class="data-card-value" id="pm10"><div class="skeleton"></div></div>
+                    <div class="data-card-sub" id="pm10Status"></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">O₃ 오존</div>
+                    <div class="data-card-value" id="o3"><div class="skeleton"></div></div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-label">NO₂ 이산화질소</div>
+                    <div class="data-card-value" id="no2"><div class="skeleton"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Info -->
+        <div class="data-section" style="padding-bottom: 40px;">
+            <div class="section-label">ℹ️ 데이터 정보</div>
+            <div class="data-grid">
+                <div class="data-card wide">
+                    <div class="data-card-label">마지막 업데이트</div>
+                    <div class="data-card-value small" id="lastUpdate"><div class="skeleton"></div></div>
+                    <div class="data-card-sub">기상: Open-Meteo · 대기질: WAQI</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back Button -->
+    <button class="back-btn" id="backBtn">
+        ← 전체 지도로 돌아가기
+    </button>
+
+    <script>
+        // ═══════════════════════════════════════════
+        // 데이터센터 목록 (여기에 추가하면 됩니다)
+        // ═══════════════════════════════════════════
+        const DATA_CENTERS = [
+            {
+                id: 'sel20-30',
+                name: 'SEL20/30',
+                address: '경기도 안양시 동안구 관양동 1743',
+                lat: 37.3980,
+                lng: 126.9653,
+            },
+            {
+                id: 'sel21',
+                name: 'SEL21',
+                address: '서울특별시 양천구 목동동로 323',
+                lat: 37.5284,
+                lng: 126.8728,
+            },
+            {
+                id: 'sel22',
+                name: 'SEL22',
+                address: '서울특별시 용산구 원효로3가 1-2',
+                lat: 37.5340,
+                lng: 126.9640,
+            },
+            {
+                id: 'sel23',
+                name: 'SEL23',
+                address: '서울특별시 금천구 가산로9길 80',
+                lat: 37.4754,
+                lng: 126.8878,
+            },
+            {
+                id: 'sel25',
+                name: 'SEL25',
+                address: '경기도 안양시 동안구 엘에스로 126',
+                lat: 37.3894,
+                lng: 126.9512,
+            },
+            {
+                id: 'sel27',
+                name: 'SEL27',
+                address: '경기도 안양시 동안구 관양동 869 LG유플러스 평촌2센터',
+                lat: 37.3989,
+                lng: 126.9685,
+            },
+        ];
+
+        // ═══════════════════════════════════════════
+        // 기본 지도 설정 (서울·경기도 전체 보기)
+        // ═══════════════════════════════════════════
+        const DEFAULT_CENTER = [37.49, 127.0];
+        const DEFAULT_ZOOM = 10;
+        const FOCUS_ZOOM = 15;
+
+        const map = L.map('map', {
+            center: DEFAULT_CENTER,
+            zoom: DEFAULT_ZOOM,
+            zoomControl: true,
+            attributionControl: true,
+        });
+
+        // 다크 테마 타일 레이어 (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19,
+        }).addTo(map);
+
+        // ═══════════════════════════════════════════
+        // 커스텀 마커 아이콘
+        // ═══════════════════════════════════════════
+        function createMarkerIcon() {
+            return L.divIcon({
+                className: 'dc-marker',
+                html: `
+                    <div class="dc-marker-pulse"></div>
+                    <div class="dc-marker-inner">
+                        <span class="marker-emoji">🏢</span>
+                    </div>
+                `,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20],
+            });
+        }
+
+        // ═══════════════════════════════════════════
+        // 마커 생성 및 이벤트 바인딩
+        // ═══════════════════════════════════════════
+        const markers = [];
+
+        DATA_CENTERS.forEach((dc) => {
+            const marker = L.marker([dc.lat, dc.lng], {
+                icon: createMarkerIcon(),
+            }).addTo(map);
+
+            marker.on('click', () => {
+                openDataCenter(dc);
+            });
+
+            // 마우스 오버 시 툴팁
+            marker.bindTooltip(dc.name, {
+                direction: 'top',
+                offset: [0, -24],
+                className: 'dc-tooltip',
+            });
+
+            markers.push({ marker, dc });
+        });
+
+        // ═══════════════════════════════════════════
+        // 패널 열기 / 닫기
+        // ═══════════════════════════════════════════
+        const infoPanel = document.getElementById('infoPanel');
+        const backBtn = document.getElementById('backBtn');
+        let isZoomed = false;
+
+        function openDataCenter(dc) {
+            // 지도 확대
+            map.flyTo([dc.lat, dc.lng], FOCUS_ZOOM, {
+                duration: 1.2,
+            });
+            isZoomed = true;
+
+            // 패널 정보 설정
+            document.getElementById('panelTitle').textContent = dc.name;
+            document.getElementById('panelAddress').textContent = dc.address;
+
+            // 로딩 표시
+            showSkeletons();
+
+            // 패널 열기
+            infoPanel.classList.add('open');
+            backBtn.classList.add('visible');
+
+            // 데이터 로드
+            fetchWeatherData(dc.lat, dc.lng);
+            fetchAirQuality(dc.lat, dc.lng);
+        }
+
+        function closePanel() {
+            infoPanel.classList.remove('open');
+            backBtn.classList.remove('visible');
+
+            if (isZoomed) {
+                map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, {
+                    duration: 1.2,
+                });
+                isZoomed = false;
+            }
+        }
+
+        document.getElementById('panelClose').addEventListener('click', closePanel);
+        document.getElementById('backBtn').addEventListener('click', closePanel);
+
+        // ESC 키로 닫기
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closePanel();
+        });
+
+        // ═══════════════════════════════════════════
+        // 로딩 스켈레톤 표시
+        // ═══════════════════════════════════════════
+        function showSkeletons() {
+            const ids = ['temperature', 'humidity', 'windspeed', 'weatherDesc', 'aqiValue', 'pm25', 'pm10', 'o3', 'no2', 'lastUpdate'];
+            ids.forEach((id) => {
+                document.getElementById(id).innerHTML = '<div class="skeleton"></div>';
+            });
+            document.getElementById('aqiBadge').innerHTML = '';
+            document.getElementById('pm25Status').textContent = '';
+            document.getElementById('pm10Status').textContent = '';
+        }
+
+        // ═══════════════════════════════════════════
+        // 날씨 데이터 — Open-Meteo (무료, 키 불필요)
+        // ═══════════════════════════════════════════
+        const WEATHER_CODES = {
+            0: '맑음 ☀️',
+            1: '대체로 맑음 🌤️',
+            2: '구름 조금 ⛅',
+            3: '흐림 ☁️',
+            45: '안개 🌫️',
+            48: '짙은 안개 🌫️',
+            51: '이슬비 🌦️',
+            53: '이슬비 🌦️',
+            55: '강한 이슬비 🌧️',
+            61: '약한 비 🌧️',
+            63: '비 🌧️',
+            65: '강한 비 🌧️',
+            71: '약한 눈 🌨️',
+            73: '눈 🌨️',
+            75: '강한 눈 ❄️',
+            77: '싸락눈 🌨️',
+            80: '소나기 🌦️',
+            81: '소나기 🌧️',
+            82: '강한 소나기 ⛈️',
+            95: '뇌우 ⛈️',
+            96: '우박 뇌우 ⛈️',
+            99: '강한 우박 뇌우 ⛈️',
+        };
+
+        async function fetchWeatherData(lat, lng) {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Seoul`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const current = data.current;
+
+                document.getElementById('temperature').innerHTML =
+                    `${current.temperature_2m}<span class="unit">°C</span>`;
+                document.getElementById('humidity').innerHTML =
+                    `${current.relative_humidity_2m}<span class="unit">%</span>`;
+                document.getElementById('windspeed').innerHTML =
+                    `${current.wind_speed_10m}<span class="unit">km/h</span>`;
+                document.getElementById('weatherDesc').textContent =
+                    WEATHER_CODES[current.weather_code] || `코드 ${current.weather_code}`;
+            } catch (err) {
+                console.error('Weather fetch error:', err);
+                document.getElementById('temperature').textContent = '—';
+                document.getElementById('humidity').textContent = '—';
+                document.getElementById('windspeed').textContent = '—';
+                document.getElementById('weatherDesc').textContent = '불러올 수 없음';
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // 대기질 데이터 — WAQI (World Air Quality Index)
+        // 공개 API, demo 토큰 사용 가능
+        // ═══════════════════════════════════════════
+        const WAQI_TOKEN = 'demo'; // 무료 데모 토큰. 프로덕션에서는 https://aqicn.org/data-platform/token/ 에서 발급
+
+        function getAqiLevel(aqi) {
+            if (aqi <= 50) return { label: '좋음', cls: 'aqi-good' };
+            if (aqi <= 100) return { label: '보통', cls: 'aqi-moderate' };
+            if (aqi <= 150) return { label: '민감군 영향', cls: 'aqi-unhealthy-sensitive' };
+            if (aqi <= 200) return { label: '나쁨', cls: 'aqi-unhealthy' };
+            if (aqi <= 300) return { label: '매우 나쁨', cls: 'aqi-very-unhealthy' };
+            return { label: '위험', cls: 'aqi-hazardous' };
+        }
+
+        function getPmStatus(val, type) {
+            if (type === 'pm25') {
+                if (val <= 15) return '좋음';
+                if (val <= 35) return '보통';
+                if (val <= 75) return '나쁨';
+                return '매우 나쁨';
+            }
+            // pm10
+            if (val <= 30) return '좋음';
+            if (val <= 80) return '보통';
+            if (val <= 150) return '나쁨';
+            return '매우 나쁨';
+        }
+
+        async function fetchAirQuality(lat, lng) {
+            try {
+                const url = `https://api.waqi.info/feed/geo:${lat};${lng}/?token=${WAQI_TOKEN}`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (data.status === 'ok') {
+                    const d = data.data;
+                    const aqi = d.aqi;
+                    const level = getAqiLevel(aqi);
+
+                    document.getElementById('aqiValue').innerHTML =
+                        `${aqi}`;
+                    document.getElementById('aqiBadge').innerHTML =
+                        `<span class="aqi-badge ${level.cls}">${level.label}</span>`;
+
+                    const iaqi = d.iaqi || {};
+
+                    // PM2.5
+                    if (iaqi.pm25) {
+                        const v = iaqi.pm25.v;
+                        document.getElementById('pm25').innerHTML = `${v}<span class="unit">㎍/㎥</span>`;
+                        document.getElementById('pm25Status').textContent = getPmStatus(v, 'pm25');
+                    } else {
+                        document.getElementById('pm25').textContent = '—';
+                    }
+
+                    // PM10
+                    if (iaqi.pm10) {
+                        const v = iaqi.pm10.v;
+                        document.getElementById('pm10').innerHTML = `${v}<span class="unit">㎍/㎥</span>`;
+                        document.getElementById('pm10Status').textContent = getPmStatus(v, 'pm10');
+                    } else {
+                        document.getElementById('pm10').textContent = '—';
+                    }
+
+                    // O3
+                    if (iaqi.o3) {
+                        document.getElementById('o3').innerHTML = `${iaqi.o3.v}<span class="unit">㎍/㎥</span>`;
+                    } else {
+                        document.getElementById('o3').textContent = '—';
+                    }
+
+                    // NO2
+                    if (iaqi.no2) {
+                        document.getElementById('no2').innerHTML = `${iaqi.no2.v}<span class="unit">㎍/㎥</span>`;
+                    } else {
+                        document.getElementById('no2').textContent = '—';
+                    }
+
+                    // 업데이트 시간
+                    const updateTime = d.time?.s || new Date().toLocaleString('ko-KR');
+                    document.getElementById('lastUpdate').textContent = updateTime;
+                } else {
+                    throw new Error(data.data || 'AQI fetch failed');
+                }
+            } catch (err) {
+                console.error('AQI fetch error:', err);
+                document.getElementById('aqiValue').textContent = '—';
+                document.getElementById('aqiBadge').innerHTML =
+                    '<span class="aqi-badge" style="background:rgba(255,255,255,0.05);color:#5a7a9a;">데이터 없음</span>';
+                ['pm25', 'pm10', 'o3', 'no2'].forEach((id) => {
+                    document.getElementById(id).textContent = '—';
+                });
+                document.getElementById('lastUpdate').textContent = '불러올 수 없음';
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        // 시간 표시
+        // ═══════════════════════════════════════════
+        function updateClock() {
+            const now = new Date();
+            const opts = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+            };
+            document.getElementById('current-time').textContent =
+                now.toLocaleString('ko-KR', opts);
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        // ═══════════════════════════════════════════
+        // 지도 클릭 시 패널 닫기
+        // ═══════════════════════════════════════════
+        map.on('click', (e) => {
+            // 마커가 아닌 곳 클릭 시 패널 닫기 (확대 유지)
+            if (infoPanel.classList.contains('open')) {
+                infoPanel.classList.remove('open');
+            }
+        });
+    </script>
+</body>
+</html>
