@@ -398,6 +398,152 @@
                 right: -100%;
             }
         }
+    /* ── Light Theme Overrides ── */
+    .theme-toggle {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.3s;
+        margin-right: 8px;
+    }
+    .theme-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    /* Light Theme Transitions */
+    body, .header, .info-panel, .data-card, .back-btn, .dc-tooltip {
+        transition: background 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s !important;
+    }
+
+    /* Light Theme Styles */
+    body.light-theme {
+        background: #f0f2f5;
+        color: #1a1a1a;
+    }
+
+    body.light-theme .header {
+        background: #ffffff;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    body.light-theme .header h1 { color: #1a1a1a; }
+    body.light-theme .header-right { color: #5f6368; }
+    body.light-theme .theme-toggle {
+        background: #f1f3f4;
+        border-color: #dadce0;
+        color: #5f6368;
+    }
+    body.light-theme .theme-toggle:hover {
+        background: #e8eaed;
+    }
+
+    body.light-theme .info-panel {
+        background: #ffffff;
+        border-left: 1px solid #e0e0e0;
+    }
+    body.light-theme .panel-header {
+        background: linear-gradient(135deg, #f8faff 0%, #f0f4f8 100%);
+        border-bottom: 1px solid #e0e0e0;
+    }
+    body.light-theme .panel-title { color: #1a1a1a; }
+    body.light-theme .panel-close {
+        border-color: rgba(0,0,0,0.1);
+        background: rgba(0,0,0,0.05);
+        color: #5f6368;
+    }
+    body.light-theme .panel-close:hover {
+        background: rgba(255, 80, 80, 0.1);
+        color: #d93025;
+    }
+
+    body.light-theme .data-section {
+        border-bottom: 1px solid #e0e0e0;
+    }
+    body.light-theme .section-label { color: #5f6368; font-weight: 700; }
+
+    body.light-theme .data-card {
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+    }
+    body.light-theme .data-card:hover {
+        background: #f1f3f4;
+        border-color: #d2e3fc;
+    }
+    body.light-theme .data-card-label,
+    body.light-theme .data-card-sub,
+    body.light-theme .data-card-value .unit {
+        color: #5f6368;
+    }
+    body.light-theme .data-card-value { color: #1a1a1a; }
+
+    body.light-theme .dc-marker-inner {
+        box-shadow: 0 4px 12px rgba(0, 100, 200, 0.3), 0 0 0 4px rgba(0, 200, 255, 0.1);
+        border-color: #fff;
+    }
+    body.light-theme .dc-marker-pulse {
+        background: rgba(0, 150, 255, 0.2);
+    }
+
+    body.light-theme .dc-tooltip {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 1px solid rgba(0,0,0,0.1) !important;
+        color: #1a1a1a !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+    }
+    body.light-theme .dc-tooltip::before {
+        border-top-color: rgba(255, 255, 255, 0.95) !important;
+    }
+
+    body.light-theme .back-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(0, 200, 255, 0.3);
+        color: #0078d4;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    body.light-theme .back-btn:hover {
+        background: #f0f8ff;
+    }
+
+    body.light-theme .skeleton {
+        background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+        background-size: 200% 100%;
+    }
+
+    body.light-theme .leaflet-container {
+        background: #f0f2f5;
+    }
+    body.light-theme .leaflet-control-zoom a {
+        background: #fff !important;
+        color: #5f6368 !important;
+        border-color: #dadce0 !important;
+    }
+    body.light-theme .leaflet-control-zoom a:hover {
+        background: #f1f3f4 !important;
+        color: #1a1a1a !important;
+    }
+    body.light-theme .leaflet-control-attribution {
+        background: rgba(255, 255, 255, 0.8) !important;
+        color: #5f6368 !important;
+    }
+    body.light-theme .leaflet-control-attribution a {
+        color: #1a73e8 !important;
+    }
+
+    /* AQI Badges Light Theme Overrides for Readability */
+    body.light-theme .aqi-good { background: rgba(0, 200, 100, 0.2); color: #00a651; }
+    body.light-theme .aqi-moderate { background: rgba(255, 200, 0, 0.2); color: #e6b800; }
+    body.light-theme .aqi-unhealthy-sensitive { background: rgba(255, 150, 0, 0.2); color: #e65100; }
+    body.light-theme .aqi-unhealthy { background: rgba(255, 60, 0, 0.2); color: #d50000; }
+    body.light-theme .aqi-very-unhealthy { background: rgba(150, 40, 180, 0.2); color: #7b1fa2; }
+    body.light-theme .aqi-hazardous { background: rgba(180, 30, 30, 0.2); color: #c62828; }
     </style>
 </head>
 <body>
@@ -408,6 +554,7 @@
             <h1>데이터센터 <span>모니터링</span></h1>
         </div>
         <div class="header-right">
+            <button class="theme-toggle" id="themeToggle" title="테마 변경">☀️</button>
             <span><span class="status-dot"></span>실시간 모니터링</span>
             <span id="current-time"></span>
         </div>
@@ -434,6 +581,7 @@
                 <div class="data-card">
                     <div class="data-card-label">🌡️ 기온</div>
                     <div class="data-card-value" id="temperature"><div class="skeleton"></div></div>
+                    <div class="data-card-sub" id="tempRange"></div>
                 </div>
                 <div class="data-card">
                     <div class="data-card-label">💧 습도</div>
@@ -568,12 +716,51 @@
             attributionControl: true,
         });
 
-        // 다크 테마 타일 레이어 (CartoDB Dark Matter)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        // ═══════════════════════════════════════════
+        // 테마 설정 (Light/Dark Toggle)
+        // ═══════════════════════════════════════════
+        const darkTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
             subdomains: 'abcd',
             maxZoom: 19,
-        }).addTo(map);
+        });
+
+        const lightTiles = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19,
+        });
+
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // 저장된 테마 불러오기 (기본값: dark)
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                body.classList.add('light-theme');
+                themeToggle.textContent = '🌙'; // 누르면 다크로 변경
+                if (map.hasLayer(darkTiles)) map.removeLayer(darkTiles);
+                if (!map.hasLayer(lightTiles)) lightTiles.addTo(map);
+            } else {
+                body.classList.remove('light-theme');
+                themeToggle.textContent = '☀️'; // 누르면 라이트로 변경
+                if (map.hasLayer(lightTiles)) map.removeLayer(lightTiles);
+                if (!map.hasLayer(darkTiles)) darkTiles.addTo(map);
+            }
+            localStorage.setItem('theme', theme);
+            currentTheme = theme;
+        }
+
+        // 초기 적용
+        applyTheme(currentTheme);
+
+        // 토글 이벤트
+        themeToggle.addEventListener('click', () => {
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
 
         // ═══════════════════════════════════════════
         // 커스텀 마커 아이콘
@@ -709,13 +896,15 @@
 
         async function fetchWeatherData(lat, lng) {
             try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=Asia/Seoul`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min&timezone=Asia/Seoul&forecast_days=1`;
                 const res = await fetch(url);
                 const data = await res.json();
                 const current = data.current;
 
                 document.getElementById('temperature').innerHTML =
                     `${current.temperature_2m}<span class="unit">°C</span>`;
+                document.getElementById('tempRange').innerHTML =
+                    `▲ ${data.daily.temperature_2m_max[0]}° / ▼ ${data.daily.temperature_2m_min[0]}°`;
                 document.getElementById('humidity').innerHTML =
                     `${current.relative_humidity_2m}<span class="unit">%</span>`;
                 document.getElementById('windspeed').innerHTML =
